@@ -7,13 +7,13 @@ This is meant to be used as a tutorial.
 
 The topics covered will be:
 
-- Poetry: for controlling Python libraries and preventing version conflicts among those libraries. In addition to builing a standardized project framework scaffold.
-- Pytest: the use of Pytest to unit test the code.
-- Coverage: to insure that we are testing all the code in the code base.
+- **Poetry**: for controlling Python libraries and preventing version conflicts among those libraries. In addition to builing a standardized project framework scaffold.
+- **Pytest**: the use of Pytest to unit test the code.
+- **Coverage**: to insure that we are testing all the code in the code base.
 - Using a multi-target Dockerfile to create Test (Development) and Production container images.
-- Checkov: to insure that our Dockerfile does not introduce any security vulnerabilities.
-- Trivy: to scan our containers for security vulnerabilities.
-- Syft: to create a container Software Bill Of Materials (SBOM). A “software bill of materials” (SBOM) has emerged as a key building block in software security and software supply chain risk management. A software Bill of Materials (SBOM) is a list of all the open source and third-party components present in a codebase. A SBOM also lists the licenses that govern those components, the versions of the components used in the codebase, and their patch status, which allows security teams to quickly identify any associated security or license risks.
+- **Checkov**: to insure that our Dockerfile does not introduce any security vulnerabilities.
+- **Trivy**: to scan our containers for security vulnerabilities.
+- **Syft**: to create a container Software Bill Of Materials (SBOM). A “software bill of materials” (SBOM) has emerged as a key building block in software security and software supply chain risk management. A software Bill of Materials (SBOM) is a list of all the open source and third-party components present in a codebase. A SBOM also lists the licenses that govern those components, the versions of the components used in the codebase, and their patch status, which allows security teams to quickly identify any associated security or license risks.
 - Grype: An alternative to Trivy, that can also ingest your SBOM and streamline the scan to make it more efficient.
 - Docker commands for some of the various utlities that we will use along with the Windows Docker variation of the commands. Most notably when to use `-v /var/run/docker.sock:/var/run/docker.sock` and `--volume "//var/run/docker.sock:/var/run/docker.sock"`
 
@@ -47,7 +47,7 @@ You can also use Podman, Rancher, etc. if you desire. You may need to change som
 poetry new roman_encode_decode
 ```
 
-This will create the following directory structure
+2. Review the generated directory scaffolding.
 
 ```bash
 roman_encode_decode
@@ -152,10 +152,20 @@ docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest
 
 We should get all the tests marked as passed and one test marked as skipped. The skipped test is for Checkov test CKV_DOCKER_2 where a health check should be installed. Since this is a batch container image there is no reason to install a health check for a load balancer to check, so we added a command `#checkov:skip=CKV_DOCKER_2:Healthcheck is not required for batch images.` to the Dockerfile to skip that test.
 
-If you are running in Windows Git Bash shell in VSCode then use the following command to get around the problem of Git Bash trying to substitute, incorrectly, parts of the `docker run` command.
+If you are running in Windows Git Bash shell in VSCode then use the following commands to get around the problem of Git Bash trying to substitute, incorrectly, parts of the `docker run` command.
+
+First, let's export MSYS_NO_PATCHCONV parameter.
 
 ```bash
-MSYS_NO_PATCHCONV=1 docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
+export MSYS_NO_PATCHCONV=1
+```
+
+**NOTE**: Execute the above statement every session you are using Git Bash in Windows.
+
+Now you can run the Docker Run command. 
+
+```bash
+docker run  --rm --tty --volume /$PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
 ```
 
 12. Build the test docker container of our application. We will tag the container as `test`.
@@ -259,14 +269,14 @@ trivy image roman_encode_decode:prod  > docker_vulnerabiltiy_report.txt
 
 To run Trivy as a docker container
 
-```
-docker run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.47.0 image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
+```bash
+docker run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
 ```
 
 To run Trivy as a docker container on Windows
 
 ```bash
-docker run -v "//var/run/docker.sock:/var/run/docker.sock" -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.47.0 image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
+docker run -v "//var/run/docker.sock:/var/run/docker.sock" -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
 ```
 
 As you can see, we have quite a few issues. Many of these are false positives. Trivy has a reputation for producing reports with false positives but you need to be aware of them.
@@ -277,7 +287,13 @@ Now let us just run with HIGH and CRITICAL severites.
 trivy image roman_encode_decode:prod --severity "HIGH,CRITICAL" > docker_vulnerabiltiy_report.txt
 ```
 
-These are the vulnerabilities you need to assess to see if they need to be addressed.
+On windows, use this command:
+
+```bash
+docker run -v "//var/run/docker.sock:/var/run/docker.sock" -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod --severity "HIGH,CRITICAL" > docker_vulnerabiltiy_report.txt
+```
+
+These are the vulnerabilities you need to assess to see if they need to be addressed. **NOTE**: Trivy is know for lots of false positives.
 
 ## Install syft
 
@@ -337,7 +353,7 @@ docker run --rm \
  roman_encode_decode:prod  > roman_decode_encode_grype_report.txt
 ```
 
-Now, let's take that SBOM we created with Syft and run it using Grype to see what vulnerabilities we have. (HINT: We should see the same things.) For our demonstration, you will not see any time savings but for larger code bases, the SBOM will save you time scanning.
+Now, let's take that SBOM JSON file we created with Syft and run it using Grype to see what vulnerabilities we have. (HINT: We should see the same things.) For our demonstration, you will not see any time savings but for larger code bases, the SBOM will save you time scanning.
 
 ```bash
 docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
@@ -350,5 +366,5 @@ If you are running Docker in Windows then use the following command:
 ```bash
 docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
 -v ${PWD}:/tmp --name grype anchore/grype:latest \
-sbom:roman_decode_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
+sbom:roman_decode_syft_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
 ```
