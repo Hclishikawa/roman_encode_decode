@@ -5,7 +5,19 @@ This is a sample Python development project that uses Python poetry, pytest, cov
 
 This is meant to be used as a tutorial.
 
-## Prerequisite: install Poetry 
+The topics covered will be:
+
+- Poetry: for controlling Python libraries and preventing version conflicts among those libraries. In addition to builing a standardized project framework scaffold.
+- Pytest: the use of Pytest to unit test the code.
+- Coverage: to insure that we are testing all the code in the code base.
+- Using a multi-target Dockerfile to create Test (Development) and Production container images.
+- Checkov: to insure that our Dockerfile does not introduce any security vulnerabilities.
+- Trivy: to scan our containers for security vulnerabilities.
+- Syft: to create a container Software Bill Of Materials (SBOM). A “software bill of materials” (SBOM) has emerged as a key building block in software security and software supply chain risk management. A software Bill of Materials (SBOM) is a list of all the open source and third-party components present in a codebase. A SBOM also lists the licenses that govern those components, the versions of the components used in the codebase, and their patch status, which allows security teams to quickly identify any associated security or license risks.
+- Grype: An alternative to Trivy, that can also ingest your SBOM and streamline the scan to make it more efficient.
+- Docker commands for some of the various utlities that we will use along with the Windows Docker variation of the commands. Most notably when to use `-v /var/run/docker.sock:/var/run/docker.sock` and `--volume "//var/run/docker.sock:/var/run/docker.sock"`
+
+## Prerequisite: install Poetry
 
 ### Linux, macOS, Windows (WSL)
 
@@ -60,7 +72,7 @@ optional = true
 
 ```bash
 poetry shell
-poetry add emoji 
+poetry add emoji
 ```
 
 5. Let's add the Python library/libraries that we need for the program in the **test** environment we created.  This has already been done. So this step is for illustration purposes only.
@@ -124,7 +136,7 @@ poetry update
 poetry run python roman_encode_decode/main.py
 ```
 
-11. Let's run the program again using Poetry, PyTest and Coverage to insure that our tests work and that we are testing 100% of our code. NOTE: that the test code usually outnumbers the actual code by a ratio around four to one. This is expected. 
+11. Let's run the program again using Poetry, PyTest and Coverage to insure that our tests work and that we are testing 100% of our code. NOTE: that the test code usually outnumbers the actual code by a ratio around four to one. This is expected.
 
 ```bash
 poetry run coverage run --source=roman_encode_decode -m pytest -v tests/ && coverage report -m
@@ -158,7 +170,7 @@ Use `--progress plain`   to show itemized container output if you need that leve
 14. Run the test docker container in interactive mode. This will put us into a Docker bash prompt (interactive terminal).
 
 ```bash
-docker run --rm -it --name test1 roman_encode_decode:test 
+docker run --rm -it --name test1 roman_encode_decode:test
 ```
 
 15. In the interactive terminal on the container run the following commands:
@@ -229,6 +241,10 @@ docker buildx build --platform linux/amd64 --progress auto \
 ```
 
 ## Container vulnerability scanning
+
+## Docker platform differences
+
+**NOTE**: When using Docker on Windows you will need to translate the volume command (-v, --volume) from   `-v /var/run/docker.sock:/var/run/docker.sock` for Mac and *nix based system to `--volume "//var/run/docker.sock:/var/run/docker.sock"` for Windows based systems.
 
 ## Install Trivy
 
@@ -335,4 +351,3 @@ docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
 -v ${PWD}:/tmp --name grype anchore/grype:latest \
 sbom:roman_decode_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
 ```
-
