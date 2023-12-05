@@ -117,32 +117,32 @@ directory = "coverage_html_report"
 
 ```
 
-7. Execute Poetry Update to get the environment up to date with the toml file.
+7. Let's set virtual environment setting to have the .venv directory in the project. This will force the creation of `poetry.toml` file, if one is not already created.  Execute Poetry Update to get the environment up to date with the toml file.
 
 ```bash
 poetry update
 ```
 
-8. Now let's execute Poetry install to put us in the test environment mode.
+9. Now let's execute Poetry install to put us in the test environment mode.
 
-   ```bash
-   poetry install --with test
-   ```
+```bash
+poetry install --with test
+```
 
-9. Run the Python program with Poetry.
+8. Run the Python program with Poetry.
 
 
 ```bash
 poetry run python roman_encode_decode/main.py
 ```
 
-11. Let's run the program again using Poetry, PyTest and Coverage to insure that our tests work and that we are testing 100% of our code. NOTE: that the test code usually outnumbers the actual code by a ratio around four to one. This is expected.
+10. Let's run the program again using Poetry, PyTest and Coverage to insure that our tests work and that we are testing 100% of our code. NOTE: that the test code usually outnumbers the actual code by a ratio around four to one. This is expected.
 
 ```bash
 poetry run coverage run --source=roman_encode_decode -m pytest -v tests/ && coverage report -m
 ```
 
-12. Scan the Dockerfile with the latest version of the checkov container for any security vulnerabilities we might had accidentally coded into the Dockerfile. The below code should be executed in the directory where the Dockerfile resides.
+11. Scan the Dockerfile with the latest version of the checkov container for any security vulnerabilities we might had accidentally coded into the Dockerfile. The below code should be executed in the directory where the Dockerfile resides.
 
 ```bash
 docker pull bridgecrew/checkov:latest
@@ -158,7 +158,7 @@ If you are running in Windows Git Bash shell in VSCode then use the following co
 MSYS_NO_PATCHCONV=1 docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
 ```
 
-13. Build the test docker container of our application. We will tag the container as `test`.
+12. Build the test docker container of our application. We will tag the container as `test`.
 
 ```bash
 DOCKER_BUILDKIT=1 docker build --progress auto -t roman_encode_decode:test --target development .
@@ -166,7 +166,8 @@ DOCKER_BUILDKIT=1 docker build --progress auto -t roman_encode_decode:test --tar
 
 Use `--progress plain`   to show itemized container output if you need that level of detail.
 
-14. Use the command `docker image ls` to verify that the image was built.
+13. Use the command `docker image ls` to verify that the image was built.
+
 14. Run the test docker container in interactive mode. This will put us into a Docker bash prompt (interactive terminal).
 
 ```bash
