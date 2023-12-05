@@ -164,7 +164,7 @@ cython_debug/
 notes.txt
 dockerfile_scan_results.txt
 docker_vulnerabiltiy_report.txt 
-roman_decode_encode_bom.txt
+roman_decode_encode_sbom.txt
 roman_decode_encode_grype_report.txt
 roman_decode_encode_grype_sbom_report.txt
-roman_decode_encode_bom.json
+roman_decode_encode_sbom.json

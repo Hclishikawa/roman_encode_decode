@@ -135,12 +135,16 @@ poetry run coverage run --source=roman_encode_decode -m pytest -v tests/ && cove
 ```bash
 docker pull bridgecrew/checkov:latest
 
-docker run  --rm --tty --volume $PWD:/tf \
---workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile \
-> dockerfile_scan_results.txt
+docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
 ```
 
 We should get all the tests marked as passed and one test marked as skipped. The skipped test is for Checkov test CKV_DOCKER_2 where a health check should be installed. Since this is a batch container image there is no reason to install a health check for a load balancer to check, so we added a command `#checkov:skip=CKV_DOCKER_2:Healthcheck is not required for batch images.` to the Dockerfile to skip that test.
+
+If you are running in Windows Git Bash shell in VSCode then use the following command to get around the problem of Git Bash trying to substitute, incorrectly, parts of the `docker run` command.
+
+```bash
+MSYS_NO_PATCHCONV=1 docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
+```
 
 13. Build the test docker container of our application. We will tag the container as `test`.
 
@@ -236,6 +240,18 @@ Run Trivy against our production container and save output.
 trivy image roman_encode_decode:prod  > docker_vulnerabiltiy_report.txt
 ```
 
+To run Trivy as a docker container
+
+```
+docker run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.47.0 image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
+```
+
+To run Trivy as a docker container on Windows
+
+```bash
+docker run -v "//var/run/docker.sock:/var/run/docker.sock" -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.47.0 image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
+```
+
 As you can see, we have quite a few issues. Many of these are false positives. Trivy has a reputation for producing reports with false positives but you need to be aware of them.
 
 Now let us just run with HIGH and CRITICAL severites.
@@ -253,12 +269,30 @@ Syft will build a Software Bill Of Materials (SBOM) for your container. This is 
 See the [Syft website for installation instructions ](https://github.com/anchore/syft)
 
 ```bash
-syft roman_encode_decode:prod  > roman_decode_encode_bom.txt
+syft roman_encode_decode:prod  > roman_decode_encode_sbom.txt
+```
+
+To run the Docker version of Syft in Windows, execute the following commands:
+
+```bash
+docker pull registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest
+
+docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
+--name syft registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest \
+roman_encode_decode:prod > roman_decode_encode_syft_sbom.txt
 ```
 
 Now, let's generate a JSON version of the SBOM so we can use it later.
 
-syft roman_encode_decode:prod -o syft-json > roman_decode_encode_bom.json
+```bash
+syft roman_encode_decode:prod -o syft-json > roman_decode_encode_sbom.json
+```
+
+To run the Docker version of this command in Windows, execute the following command:
+
+```bash
+docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" --name syft registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest roman_encode_decode:prod -o syft-json > roman_decode_encode_syft_sbom.json
+```
 
 If you need an even more detailed report for all the layers in the container you can use the `--scope` option
 
@@ -273,7 +307,16 @@ Grype is another vulnerability scanner that also can use the Syft BOM file you j
 ```bash
 docker run --rm \
 --volume /var/run/docker.sock:/var/run/docker.sock \
---name Grype anchore/grype:latest \
+--name grype anchore/grype:latest \
+ roman_encode_decode:prod  > roman_decode_encode_grype_report.txt
+```
+
+If you are running Docker in Windows then use the following command:
+
+```bash
+docker run --rm \
+--volume "//var/run/docker.sock:/var/run/docker.sock" \
+--name grype anchore/grype:latest \
  roman_encode_decode:prod  > roman_decode_encode_grype_report.txt
 ```
 
@@ -281,9 +324,15 @@ Now, let's take that SBOM we created with Syft and run it using Grype to see wha
 
 ```bash
 docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
--v ${PWD}:/tmp --name Grype anchore/grype:latest \
-sbom:roman_decode_encode_bom.json > roman_decode_encode_grype_sbom_report.txt
+-v ${PWD}:/tmp --name grype anchore/grype:latest \
+sbom:roman_decode_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
 ```
 
+If you are running Docker in Windows then use the following command:
 
+```bash
+docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
+-v ${PWD}:/tmp --name grype anchore/grype:latest \
+sbom:roman_decode_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
+```
 
