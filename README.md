@@ -3,7 +3,7 @@
 
 This is a sample Python development project that uses Python poetry, pytest, coverage and Docker to test and package the code. We also create a software bill of materials (SBOM) for our Docker image and then scan the Docker images for vulnerabilites with Trivy and Grype.
 
-This is meant to be used as a tutorial.
+<u>This is meant to be used as a tutorial.</u>
 
 The topics covered will be:
 
@@ -14,8 +14,8 @@ The topics covered will be:
 - **Checkov**: to insure that our Dockerfile does not introduce any security vulnerabilities.
 - **Trivy**: to scan our containers for security vulnerabilities.
 - **Syft**: to create a container Software Bill Of Materials (SBOM). A “software bill of materials” (SBOM) has emerged as a key building block in software security and software supply chain risk management. A software Bill of Materials (SBOM) is a list of all the open source and third-party components present in a codebase. A SBOM also lists the licenses that govern those components, the versions of the components used in the codebase, and their patch status, which allows security teams to quickly identify any associated security or license risks.
-- Grype: An alternative to Trivy, that can also ingest your SBOM and streamline the scan to make it more efficient.
-- Docker commands for some of the various utlities that we will use along with the Windows Docker variation of the commands. Most notably when to use `-v /var/run/docker.sock:/var/run/docker.sock` and `--volume "//var/run/docker.sock:/var/run/docker.sock"`
+- **Grype**: An alternative to Trivy, that can also ingest your SBOM and streamline the scan to make it more efficient.
+- **Docker**:  Commands for some of the various utlities that we will use along with the Windows Docker variation of the commands. Most notably when to use `-v /var/run/docker.sock:/var/run/docker.sock` and `--volume "//var/run/docker.sock:/var/run/docker.sock"`
 
 ## Prerequisite: install Poetry
 
@@ -117,7 +117,7 @@ directory = "coverage_html_report"
 
 ```
 
-7. Let's set virtual environment setting to have the .venv directory in the project. This will force the creation of `poetry.toml` file, if one is not already created.  Execute Poetry Update to get the environment up to date with the toml file.
+7. Let's set virtual environment setting to have the .venv directory in the project. This will force the creation of `poetry.toml` file, if one is not already created.  Execute `poetry update` to get the environment up to date with the toml file.
 
 ```bash
 poetry update
@@ -129,10 +129,12 @@ poetry update
 poetry install --with test
 ```
 
-8. Run the Python program with Poetry.
+8. Run a Plylint check and then the Python program with Poetry.
 
 
 ```bash
+poetry run pylint roman_encode_decode/main.py
+
 poetry run python roman_encode_decode/main.py
 ```
 
@@ -152,9 +154,13 @@ docker run  --rm --tty --volume $PWD:/tf --workdir /tf bridgecrew/checkov:latest
 
 We should get all the tests marked as passed and one test marked as skipped. The skipped test is for Checkov test CKV_DOCKER_2 where a health check should be installed. Since this is a batch container image there is no reason to install a health check for a load balancer to check, so we added a command `#checkov:skip=CKV_DOCKER_2:Healthcheck is not required for batch images.` to the Dockerfile to skip that test.
 
+### Windows Docker Run 
+
 If you are running in Windows Git Bash shell in VSCode then use the following commands to get around the problem of Git Bash trying to substitute, incorrectly, parts of the `docker run` command.
 
-First, let's export MSYS_NO_PATCHCONV parameter.
+Also, make sure that you are not executing from a Windows directory that has a space in the directory name. This will cause an absolute path issue when you run Docker in Windows.
+
+First, let's export the MSYS_NO_PATCHCONV parameter.
 
 ```bash
 export MSYS_NO_PATCHCONV=1
@@ -165,7 +171,7 @@ export MSYS_NO_PATCHCONV=1
 Now you can run the Docker Run command. 
 
 ```bash
-docker run  --rm --tty --volume /$PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
+MSYS_NO_PATCHCONV=1 docker run  --rm --tty --volume /$PWD:/tf --workdir /tf bridgecrew/checkov:latest --directory /tf --framework dockerfile > dockerfile_scan_results.txt
 ```
 
 12. Build the test docker container of our application. We will tag the container as `test`.
@@ -204,7 +210,7 @@ DOCKER_BUILDKIT=1 docker build --progress auto -t roman_encode_decode:prod --tar
 
 17. Use the command `docker image ls` to verify that the image was built.
 
-If you notice in your docker console or if you execute `docker image ls` the production container is significantly smaller than the test container.
+If you notice in your docker console or if you execute `docker image ls` the production container is significantly smaller than the test container. Smaller is better!
 
 ```bash
 docker image ls
@@ -214,7 +220,7 @@ roman_encode_decode   prod      2c7f84203015   18 hours ago   271MB
 roman_encode_decode   test      4182c4732c7c   23 hours ago   804MB
 ```
 
-18. Run the production docker container to insure that we get the expected results. (Same as what we got in test.)
+18. Run the production docker container to insure that we get the expected results. (Same results as what we got in test.)
 
 ```bash
 docker run --rm -it --name prod1 roman_encode_decode:prod
@@ -253,11 +259,11 @@ docker buildx build --platform linux/amd64 --progress auto \
 
 ## Container vulnerability scanning
 
-## Docker platform differences
+### Docker platform differences
 
 **NOTE**: When using Docker on Windows you will need to translate the volume command (-v, --volume) from   `-v /var/run/docker.sock:/var/run/docker.sock` for Mac and *nix based system to `--volume "//var/run/docker.sock:/var/run/docker.sock"` for Windows based systems.
 
-## Install Trivy
+### Install and run Trivy
 
 See the [Trivy website for installation instructions for your platform](https://aquasecurity.github.io/trivy/v0.17.2/installation/)
 
@@ -267,7 +273,7 @@ Run Trivy against our production container and save output.
 trivy image roman_encode_decode:prod  > docker_vulnerabiltiy_report.txt
 ```
 
-To run Trivy as a docker container
+To run Trivy as a docker container on Mac or Linux
 
 ```bash
 docker run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod > docker_vulnerabiltiy_report.txt
@@ -287,22 +293,42 @@ Now let us just run with HIGH and CRITICAL severites.
 trivy image roman_encode_decode:prod --severity "HIGH,CRITICAL" > docker_vulnerabiltiy_report.txt
 ```
 
-On windows, use this command:
+On Mac or Linux, use this Docker command:
+
+```bash
+docker run -v /var/run/docker.sock:/var/run/docker.sock -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod --severity "HIGH,CRITICAL" > docker_vulnerabiltiy_high_critical_report.txt
+```
+
+On Windows, use this Docker command:
 
 ```bash
 docker run -v "//var/run/docker.sock:/var/run/docker.sock" -v $HOME/Library/Caches:/root/.cache/ aquasec/trivy:latest image roman_encode_decode:prod --severity "HIGH,CRITICAL" > docker_vulnerabiltiy_report.txt
 ```
 
-These are the vulnerabilities you need to assess to see if they need to be addressed. **NOTE**: Trivy is know for lots of false positives.
+These are the vulnerabilities you need to assess to see if they need to be addressed. 
 
-## Install syft
+**NOTE**: Trivy is known for lots of false positives, so adjust your severity level as warranted by your project.
 
-Syft will build a Software Bill Of Materials (SBOM) for your container. This is useful for dealing with IT security if they have questions about what libraries your container is using and for scanning your container with various utilities.
+### Install and run Syft
+
+Syft will build a Software Bill Of Materials (SBOM) for your container. This is useful for dealing with IT security or the QA team if they have questions about what libraries, binaries and licenses your container is using. 
+
+You can also use the SBOM for scanning your container with various utilities such as Grype. (We'll do that in the next section.)
 
 See the [Syft website for installation instructions ](https://github.com/anchore/syft)
 
 ```bash
 syft roman_encode_decode:prod  > roman_decode_encode_sbom.txt
+```
+
+To run the Docker version of Syft Mac or Linux, execute the following commands:
+
+```bash
+docker pull anchore/syft:latest
+
+docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
+--name syft anchore/syft:latest \
+roman_encode_decode:prod > roman_decode_encode_syft_sbom.txt
 ```
 
 To run the Docker version of Syft in Windows, execute the following commands:
@@ -311,7 +337,7 @@ To run the Docker version of Syft in Windows, execute the following commands:
 docker pull registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest
 
 docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
---name syft registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest \
+--name syft anchore/syft:latest \
 roman_encode_decode:prod > roman_decode_encode_syft_sbom.txt
 ```
 
@@ -321,21 +347,39 @@ Now, let's generate a JSON version of the SBOM so we can use it later.
 syft roman_encode_decode:prod -o syft-json > roman_decode_encode_sbom.json
 ```
 
+To run the Docker version of this command in Mac or Linux, execute the following command:
+
+```bash
+docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
+--name syft anchore/syft:latest roman_encode_decode:prod \
+-o syft-json > roman_decode_encode_syft_sbom.json
+```
+
 To run the Docker version of this command in Windows, execute the following command:
 
 ```bash
-docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" --name syft registry.gitlab.com/gitlab-ci-utils/container-images/syft:latest roman_encode_decode:prod -o syft-json > roman_decode_encode_syft_sbom.json
+docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
+--name syft anchore/syft:latest roman_encode_decode:prod \
+-o syft-json > roman_decode_encode_syft_sbom.json
 ```
 
-If you need an even more detailed report for all the layers in the container you can use the `--scope` option
+If you need an even more detailed report for all the layers in the container you can use the `--scope` option and add it to the command.
 
 ```bash
 syft roman_encode_decode:prod --scope all-layers > roman_decode_encode_all_layers_bom.txt
 ```
 
-## Run Grype
+### Install and run Grype
 
 Grype is another vulnerability scanner that also can use the Syft BOM file you just produced to speed up the scanning process. For our demonstration, we will just run Grype on the container.
+
+First, let's pull the container.
+
+```bash
+docker pull anchore/grype:latest
+```
+
+If you are running Docker on Mac or Linux then use the following command:
 
 ```bash
 docker run --rm \
@@ -355,10 +399,12 @@ docker run --rm \
 
 Now, let's take that SBOM JSON file we created with Syft and run it using Grype to see what vulnerabilities we have. (HINT: We should see the same things.) For our demonstration, you will not see any time savings but for larger code bases, the SBOM will save you time scanning.
 
+If you are running Docker on Mac or Linux  then use the following command:
+
 ```bash
 docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock \
 -v ${PWD}:/tmp --name grype anchore/grype:latest \
-sbom:roman_decode_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
+sbom:roman_decode_encode_syft_sbom.json > roman_decode_encode_grype_sbom_report.txt
 ```
 
 If you are running Docker in Windows then use the following command:
@@ -366,5 +412,9 @@ If you are running Docker in Windows then use the following command:
 ```bash
 docker run --rm --volume "//var/run/docker.sock:/var/run/docker.sock" \
 -v ${PWD}:/tmp --name grype anchore/grype:latest \
-sbom:roman_decode_syft_encode_sbom.json > roman_decode_encode_grype_sbom_report.txt
+sbom:roman_decode_encode_syft_sbom.json > roman_decode_encode_grype_sbom_report.txt
 ```
+
+## Conclusion
+
+While this is not an exhaustive sample development environment, this should form a good foundation for developing containerized Python applications.
