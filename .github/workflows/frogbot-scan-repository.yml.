@@ -36,11 +36,11 @@ jobs:
 
           # [Mandatory]
           # The GitHub token is automatically generated for the job
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_GIT_TOKEN: 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
 
           # [Mandatory]
           # The name of the branch on which Frogbot will perform the scan
-          JF_GIT_BASE_BRANCH: ${{ matrix.branch }}
+          JF_GIT_BASE_BRANCH: main
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
