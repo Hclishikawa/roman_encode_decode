@@ -32,7 +32,7 @@ jobs:
 
           # [Mandatory]
           # The GitHub token is automatically generated for the job
-          JF_GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JF_GIT_TOKEN: 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
 
           # [Optional, default: https://api.github.com]
           # API endpoint to GitHub
